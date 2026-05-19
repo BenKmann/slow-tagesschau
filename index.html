@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tagesschau</title>
+    <style>
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 0;
+            padding: 20px;
+        }
+        #menu {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .video-btn { 
+            font-size: 2rem; 
+            padding: 30px 40px; 
+            cursor: pointer; 
+            background: #005293; 
+            color: white; 
+            border: none; 
+            border-radius: 15px; 
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+        }
+        .video-btn:active { background: #003a69; }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu">
+        <h2>Lade Videos...</h2>
+    </div>
+
+    <div class="video-wrapper">
+        <div id="player"></div>
+    </div>
+
+    <script>
+        var player;
+        
+        // 1. YouTube API asynchron laden
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1, 
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': fetchVideos, // Wenn Player bereit, lade Videos
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        // 2. Neueste Videos über rss2json holen
+        function fetchVideos() {
+            // Tagesschau YouTube Channel ID: UC5NOEUbkLheQcaaRldYW5GA
+            const rssUrl = encodeURIComponent('https://www.youtube.com/feeds/videos.xml?channel_id=UC5NOEUbkLheQcaaRldYW5GA');
+            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const menu = document.getElementById('menu');
+                    menu.innerHTML = ''; // "Lade Videos..." entfernen
+
+                    // Filtern: Nur Videos nehmen, die wirklich "Tagesschau 20:00 Uhr" oder ähnlich heißen 
+                    // (falls sie Shorts oder andere Clips hochladen)
+                    let count = 0;
+                    const labels = ["Neueste", "Vorherige", "Davor"];
+
+                    data.items.forEach(item => {
+                        if (count >= 3) return; // Nur 3 Buttons
+                        
+                        // Hier kannst du ggf. nach dem Titel filtern, z.B.:
+                        // if (!item.title.toLowerCase().includes("20:00 uhr")) return;
+
+                        // YouTube Video ID aus dem Link extrahieren
+                        const videoId = item.link.split('v=')[1];
+
+                        // Button erstellen
+                        const btn = document.createElement('button');
+                        btn.className = 'video-btn';
+                        btn.innerText = labels[count];
+                        btn.onclick = () => loadVideo(videoId);
+                        menu.appendChild(btn);
+
+                        count++;
+                    });
+                })
+                .catch(error => {
+                    document.getElementById('menu').innerHTML = '<h2>Fehler beim Laden. Bitte Seite neu laden.</h2>';
+                    console.error("Fehler:", error);
+                });
+        }
+
+        function loadVideo(videoId) {
+            if(player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            // Setzt die Geschwindigkeit hart auf 0.75, wenn das Video abspielt
+            if (event.data == YT.PlayerState.PLAYING) {
+                event.target.setPlaybackRate(0.75);
+            }
+        }
+    </script>
+</body>
+</html>
