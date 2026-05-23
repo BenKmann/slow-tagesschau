@@ -42,6 +42,7 @@
             word-wrap: break-word;
             overflow: hidden;
             transition: all 0.2s ease;
+            line-height: 1.2;
         }
         .video-btn:hover {
             background: #f0f0f0;
@@ -88,6 +89,31 @@
             font-size: 1.5rem;
             margin: 0 0 30px 0;
         }
+
+        /* Tablet: Größere Buttons */
+        @media (min-width: 768px) {
+            .video-btn {
+                width: 220px;
+                height: 110px;
+                font-size: 1.15rem;
+                gap: 12px;
+            }
+            #menu {
+                gap: 20px;
+            }
+        }
+
+        /* Desktop: Noch größere Buttons */
+        @media (min-width: 1024px) {
+            .video-btn {
+                width: 240px;
+                height: 120px;
+                font-size: 1.2rem;
+            }
+            #menu {
+                gap: 25px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -126,6 +152,14 @@
             });
         }
 
+        // Titel auf max. 2 Zeilen kürzen (ca. 50-60 Zeichen)
+        function truncateTitle(title, maxLength = 55) {
+            if (title.length > maxLength) {
+                return title.substring(0, maxLength) + '...';
+            }
+            return title;
+        }
+
         // 2. Neueste Videos über rss2json holen
         function fetchVideos() {
             // Tagesschau YouTube Channel ID: UC5NOEUbkLheQcaaRldYW5GA
@@ -149,8 +183,13 @@
                         // Button erstellen
                         const btn = document.createElement('button');
                         btn.className = 'video-btn';
-                        btn.innerText = item.title;
-                        btn.title = item.title; // Tooltip mit vollem Titel
+                        
+                        // Titel kürzen für Anzeige
+                        const displayTitle = truncateTitle(item.title);
+                        btn.innerText = displayTitle;
+                        
+                        // Vollständiger Titel im Tooltip
+                        btn.title = item.title;
                         btn.onclick = () => loadVideo(videoId);
                         btn.setAttribute('aria-label', `Video: ${item.title}`);
 
